@@ -1,0 +1,23 @@
+{
+  "name": "otel-slo-thumbnailer",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "build": "npm -ws run build",
+    "dev": "npm -ws run dev",
+    "lint": "npm -ws run lint",
+    "typecheck": "npm -ws run typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^25.0.3",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.1"
+  }
+}

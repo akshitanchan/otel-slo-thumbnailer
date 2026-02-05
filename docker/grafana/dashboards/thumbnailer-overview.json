@@ -1,0 +1,19 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["thumbnailer"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "thumbnailer overview",
+  "uid": "thumbnailer-overview",
+  "version": 1
+}

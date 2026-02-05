@@ -1,0 +1,78 @@
+groups:
+  - name: thumbnailer.rules
+    interval: 15s
+    rules:
+      - alert: ThumbnailerApiDown
+        expr: up{job="thumbnailer_api"} == 0
+        for: 30s
+        labels:
+          severity: page
+          service: thumbnailer-api
+        annotations:
+          summary: "thumbnailer api is down"
+          description: "prometheus cannot scrape thumbnailer api /metrics for 30s"
+
+      - alert: ThumbnailerWorkerDown
+        expr: up{job="thumbnailer_worker"} == 0
+        for: 30s
+        labels:
+          severity: page
+          service: thumbnailer-worker
+        annotations:
+          summary: "thumbnailer worker is down"
+          description: "prometheus cannot scrape thumbnailer worker /metrics for 30s"
+
+      # db health as seen by app readiness probes
+      - alert: ThumbnailerApiNotReady
+        expr: thumbnailer_ready == 0
+        for: 30s
+        labels:
+          severity: page
+          service: thumbnailer-api
+        annotations:
+          summary: "thumbnailer api is not ready"
+          description: "api /readyz reports not ready for 30s (commonly db down)"
+
+      - alert: ThumbnailerWorkerNotReady
+        expr: worker_ready == 0
+        for: 30s
+        labels:
+          severity: page
+          service: thumbnailer-worker
+        annotations:
+          summary: "thumbnailer worker is not ready"
+          description: "worker /readyz reports not ready for 30s (commonly db down)"
+
+      # high 5xx rate (fast signal during failures)
+      - alert: ThumbnailerApiHigh5xxRate
+        expr: |
+          (
+            sum(rate(http_requests_total{service="api",status_code=~"5.."}[2m]))
+            /
+            sum(rate(http_requests_total{service="api"}[2m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: page
+          service: thumbnailer-api
+        annotations:
+          summary: "api 5xx rate > 5% (2m)"
+          description: "api is returning elevated 5xx responses"
+
+      # latency slo: 99% under 300ms
+      # we alert on a "fast burn" using error budget style:
+      # good = under 0.3s, bad = >= 0.3s
+      - alert: ThumbnailerLatencySLOFastBurn
+        expr: |
+          (
+            sum(rate(http_request_duration_seconds_bucket{service="api",route="POST /v1/thumbnails",le="0.3"}[5m]))
+            /
+            sum(rate(http_request_duration_seconds_count{service="api",route="POST /v1/thumbnails"}[5m]))
+          ) < 0.99
+        for: 5m
+        labels:
+          severity: page
+          service: thumbnailer-api
+        annotations:
+          summary: "latency slo burn (fast)"
+          description: "less than 99% of POST /v1/thumbnails requests are under 300ms over 5m"
