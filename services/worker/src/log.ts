@@ -10,7 +10,6 @@ function activeTraceIds(): { trace_id?: string; span_id?: string } {
 }
 
 export function log(level: LogLevel, event: string, fields: Record<string, unknown> = {}) {
-  // eslint-disable-next-line no-console
   console.log(
     JSON.stringify({
       ts: new Date().toISOString(),

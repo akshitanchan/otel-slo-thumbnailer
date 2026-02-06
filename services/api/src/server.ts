@@ -14,6 +14,12 @@ import { log } from "./log.js";
 import { saveUploadWithHash } from "./file.js";
 import { parseSizes } from "./validation.js";
 
+declare module "fastify" {
+  interface FastifyRequest {
+    __startHr?: bigint;
+  }
+}
+
 type CreateJobResponse = {
   job_id: string;
   status: "queued";
@@ -73,11 +79,11 @@ export async function buildServer(
 
   // metrics hook
   app.addHook("onRequest", async (req) => {
-    (req as any).__startHr = process.hrtime.bigint();
+    req.__startHr = process.hrtime.bigint();
   });
 
   app.addHook("onResponse", async (req, reply) => {
-    const start = (req as any).__startHr as bigint | undefined;
+    const start = req.__startHr;
     if (!start) return;
 
     const durNs = process.hrtime.bigint() - start;
@@ -121,9 +127,10 @@ export async function buildServer(
     const tenantId = (req.headers["x-tenant-id"] ? String(req.headers["x-tenant-id"]) : "demo").trim();
     const idempotencyKey = req.headers["idempotency-key"] ? String(req.headers["idempotency-key"]).trim() : null;
 
-    const sizes = parseSizes((req.query as any)?.sizes, config.allowedSizes);
+    const query = req.query as Record<string, string | undefined>;
+    const sizes = parseSizes(query.sizes, config.allowedSizes);
 
-    const file = await (req as any).file();
+    const file = await req.file();
     if (!file) {
       reply.code(400);
       return { error: "missing file" };
@@ -218,13 +225,13 @@ export async function buildServer(
     }
   });
 
-  app.get("/v1/jobs/:id", async (req, reply) => {
+  app.get<{ Params: { id: string } }>("/v1/jobs/:id", async (req, reply) => {
     if (!opts.getReady()) {
       reply.code(503);
       return { error: "dependency unavailable" };
     }
 
-    const id = (req.params as any).id as string;
+    const id = req.params.id;
 
     const jobRes = await db.query<JobRow>(
       "get_job",
@@ -279,9 +286,9 @@ export async function buildServer(
     };
   });
 
-  app.get("/v1/thumbnails/:id/:size", async (req, reply) => {
-    const id = (req.params as any).id as string;
-    const sizeRaw = (req.params as any).size as string;
+  app.get<{ Params: { id: string; size: string } }>("/v1/thumbnails/:id/:size", async (req, reply) => {
+    const id = req.params.id;
+    const sizeRaw = req.params.size;
     const size = Number(sizeRaw);
 
     if (!Number.isInteger(size)) {
@@ -301,7 +308,7 @@ export async function buildServer(
     }
 
     reply.type("image/jpeg");
-    return reply.sendFile ? reply.sendFile(abs) : reply.send(createReadStream(abs));
+    return reply.send(createReadStream(abs));
   });
 
   return { app, db, config };

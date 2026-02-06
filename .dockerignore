@@ -1,0 +1,11 @@
+node_modules
+.data
+tmp
+demo_runs
+.git
+.gitignore
+*.md
+!README.md
+.env
+.env.*
+dist

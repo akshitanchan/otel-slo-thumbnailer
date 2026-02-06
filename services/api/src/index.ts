@@ -2,20 +2,15 @@ import process from "node:process";
 import { startOtel, shutdownOtel } from "./otel.js";
 import { startReadinessLoop } from "./readiness.js";
 
-let db: any;
-let readiness: ReturnType<typeof startReadinessLoop>;
-
 await startOtel();
 
 const { buildServer } = await import("./server.js");
 
-const { app, db: createdDb, config } = await buildServer({
+const { app, db, config } = await buildServer({
   getReady: () => readiness?.getReady() ?? false,
 });
 
-db = createdDb;
-
-readiness = startReadinessLoop(
+const readiness = startReadinessLoop(
   async () => {
     await db.query("readiness_check", "SELECT 1");
   },
@@ -26,10 +21,10 @@ const close = async () => {
   readiness.stop();
   try {
     await app.close();
-  } catch {}
+  } catch { /* shutdown best-effort */ }
   try {
     await db.close();
-  } catch {}
+  } catch { /* shutdown best-effort */ }
   await shutdownOtel().catch(() => {});
 };
 

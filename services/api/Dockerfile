@@ -2,7 +2,7 @@ FROM node:20-bookworm-slim
 
 WORKDIR /app
 
-COPY package.json package-lock.json tsconfig.base.json eslint.config.js ./
+COPY package.json package-lock.json tsconfig.base.json eslint.config.mjs ./
 COPY services/api/package.json services/api/package.json
 
 RUN npm ci

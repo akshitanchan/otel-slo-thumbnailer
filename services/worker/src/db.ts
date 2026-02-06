@@ -18,7 +18,6 @@ export function createDb(databaseUrl: string): Db {
   });
 
   pool.on("error", (err) => {
-    // eslint-disable-next-line no-console
     console.error(
       JSON.stringify({
         ts: new Date().toISOString(),

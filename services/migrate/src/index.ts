@@ -12,7 +12,6 @@ function log(level: LogLevel, event: string, fields: Record<string, unknown> = {
     event,
     ...fields
   };
-  // eslint-disable-next-line no-console
   console.log(JSON.stringify(line));
 }
 

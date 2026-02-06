@@ -27,10 +27,10 @@ const shutdown = async () => {
   readiness.stop();
   try {
     await app.close();
-  } catch {}
+  } catch { /* shutdown best-effort */ }
   try {
     await db.close();
-  } catch {}
+  } catch { /* shutdown best-effort */ }
   await shutdownOtel().catch(() => {});
 };
 

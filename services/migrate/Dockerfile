@@ -3,7 +3,7 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 # copy workspace manifests first for better caching
-COPY package.json package-lock.json tsconfig.base.json eslint.config.js ./
+COPY package.json package-lock.json tsconfig.base.json eslint.config.mjs ./
 COPY services/migrate/package.json services/migrate/package.json
 
 RUN npm ci
