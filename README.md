@@ -2,6 +2,8 @@
 
 Microservice demo with API + worker + Postgres, fully instrumented with OpenTelemetry, Prometheus, Grafana, and Jaeger. Includes a demo script that injects a DB-down incident and captures a replayable run. Implementation is in TypeScript/Node.
 
+![Grafana dashboard during a DB-down incident](docs/grafana-incident.png)
+
 ## Quickstart
 
 ```bash

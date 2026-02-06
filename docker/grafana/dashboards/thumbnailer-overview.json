@@ -13,7 +13,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{service=\"api\"}[1m]))",
+          "expr": "sum(rate(http_requests_total{service=\"api\"}[30s]))",
           "legendFormat": "rps"
         }
       ],
@@ -26,15 +26,15 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "histogram_quantile(0.5, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=\"POST\",route=\"/v1/thumbnails\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.5, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=\"POST\",route=\"/v1/thumbnails\"}[1m])) by (le))",
           "legendFormat": "p50"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=\"POST\",route=\"/v1/thumbnails\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=\"POST\",route=\"/v1/thumbnails\"}[1m])) by (le))",
           "legendFormat": "p95"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=\"POST\",route=\"/v1/thumbnails\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=\"api\",method=\"POST\",route=\"/v1/thumbnails\"}[1m])) by (le))",
           "legendFormat": "p99"
         }
       ],
@@ -42,13 +42,13 @@
     },
     {
       "id": 3,
-      "title": "API 5xx Rate",
+      "title": "API Error Rate (5xx)",
       "type": "timeseries",
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{service=\"api\",status_code=~\"5..\"}[2m])) / sum(rate(http_requests_total{service=\"api\"}[2m]))",
-          "legendFormat": "5xx%"
+          "expr": "(sum(rate(http_requests_total{service=\"api\",status_code=~\"5..\"}[1m])) / sum(rate(http_requests_total{service=\"api\"}[1m]))) or vector(0)",
+          "legendFormat": "error %"
         }
       ],
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 }
@@ -77,12 +77,12 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "rate(jobs_claimed_total[1m])",
-          "legendFormat": "claimed"
+          "expr": "rate(jobs_claimed_total[30s])",
+          "legendFormat": "claimed/s"
         },
         {
-          "expr": "sum by (result) (rate(jobs_completed_total[1m]))",
-          "legendFormat": "completed {{result}}"
+          "expr": "sum by (result) (rate(jobs_completed_total[30s]))",
+          "legendFormat": "completed/s ({{result}})"
         }
       ],
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 }
@@ -94,11 +94,11 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "histogram_quantile(0.5, sum(rate(job_latency_seconds_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.5, sum(rate(job_latency_seconds_bucket[1m])) by (le))",
           "legendFormat": "p50"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(job_latency_seconds_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(job_latency_seconds_bucket[1m])) by (le))",
           "legendFormat": "p95"
         }
       ],
@@ -111,11 +111,11 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket{service=\"api\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket{service=\"api\"}[1m])) by (le))",
           "legendFormat": "api"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket{service=\"worker\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket{service=\"worker\"}[1m])) by (le))",
           "legendFormat": "worker"
         }
       ],
