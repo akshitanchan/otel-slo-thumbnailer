@@ -9,7 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
-      - ./.data/postgres:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d thumbnailer"]
       interval: 2s
@@ -40,7 +40,6 @@ services:
     command: ["--config=/etc/otel-collector.yaml"]
     volumes:
       - ./docker/otel/otel-collector.yaml:/etc/otel-collector.yaml:ro
-      - ./docker/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
 
     ports:
       - "4319:4317"   # expose collector grpc on host:4319 (optional)
@@ -54,6 +53,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
     ports:
       - "9090:9090"
 
@@ -138,3 +138,4 @@ services:
 volumes:
   grafana_data:
   thumb_data:
+  pg_data:
