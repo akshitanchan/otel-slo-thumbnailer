@@ -1,6 +1,6 @@
 # Observability-First Image Thumbnailer
 
-A microservice demo with an API + worker + Postgres, fully instrumented with OpenTelemetry, Prometheus, and Grafana. Includes a demo script that injects a DB-down incident and captures a replayable run.
+Microservice demo with API + worker + Postgres, fully instrumented with OpenTelemetry, Prometheus, Grafana, and Jaeger. Includes a demo script that injects a DB-down incident and captures a replayable run. Implementation is in TypeScript/Node.
 
 ## Quickstart
 
@@ -52,4 +52,16 @@ See docs/runbook.md
 npm test
 npm run test:integration
 npm run test:chaos
+```
+
+## Makefile
+
+For convenience:
+
+```bash
+make up
+make demo
+make chaos-dbdown
+make test
+make lint
 ```
