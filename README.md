@@ -1,0 +1,55 @@
+# Observability-First Image Thumbnailer
+
+A microservice demo with an API + worker + Postgres, fully instrumented with OpenTelemetry, Prometheus, and Grafana. Includes a demo script that injects a DB-down incident and captures a replayable run.
+
+## Quickstart
+
+```bash
+docker compose up -d --build
+```
+
+Open:
+- Grafana: http://localhost:3000 (admin/admin)
+- Prometheus: http://localhost:9090
+- Jaeger: http://localhost:16686
+
+## Demo
+
+```bash
+npm run demo
+```
+
+This will:
+- Send 100 requests
+- Inject a DB-down incident
+- Recover and write a run record to demo_runs/run.json
+
+To replay a run:
+
+```bash
+npm run loadgen -- --replay demo_runs/run.json
+```
+
+## Endpoints
+
+- `POST /v1/thumbnails` (multipart upload)
+- `GET /v1/jobs/:id`
+- `GET /v1/thumbnails/:id/:size`
+- `GET /healthz` / `GET /readyz` / `GET /metrics`
+
+## SLOs
+
+- API enqueue latency: 99% under 300ms
+- End-to-end job latency: p95 under 5s
+
+## Runbook
+
+See docs/runbook.md
+
+## Tests
+
+```bash
+npm test
+npm run test:integration
+npm run test:chaos
+```

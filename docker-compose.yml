@@ -16,6 +16,16 @@ services:
       timeout: 2s
       retries: 20
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@postgres:5432/thumbnailer?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   jaeger:
     image: jaegertracing/all-in-one:1.55
     ports:
@@ -92,6 +102,10 @@ services:
         condition: service_healthy
       otel-collector:
         condition: service_started
+      postgres-exporter:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   worker:
     build:
@@ -116,6 +130,10 @@ services:
         condition: service_started
       api:
         condition: service_started
+      postgres-exporter:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   grafana_data:

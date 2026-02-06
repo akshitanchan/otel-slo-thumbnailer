@@ -5,8 +5,16 @@
     "services/*"
   ],
   "scripts": {
+    "up": "docker compose up -d --build",
+    "down": "docker compose down -v",
     "build": "npm -ws run build",
     "dev": "npm -ws run dev",
+    "demo": "bash scripts/demo.sh",
+    "loadgen": "tsx scripts/loadgen.ts",
+    "test": "npm -ws run test",
+    "test:integration": "bash scripts/integration-test.sh",
+    "test:chaos": "bash scripts/chaos-test.sh",
+    "test:all": "npm test && npm run test:integration && npm run test:chaos",
     "lint": "npm -ws run lint",
     "typecheck": "npm -ws run typecheck"
   },
@@ -18,6 +26,7 @@
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.19.1"
+    "typescript-eslint": "^8.19.1",
+    "vitest": "^2.1.9"
   }
 }

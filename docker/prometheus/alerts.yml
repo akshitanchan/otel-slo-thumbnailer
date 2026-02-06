@@ -22,6 +22,16 @@ groups:
           summary: "thumbnailer worker is down"
           description: "prometheus cannot scrape thumbnailer worker /metrics for 30s"
 
+      - alert: ThumbnailerDbDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: page
+          service: postgres
+        annotations:
+          summary: "postgres is down"
+          description: "prometheus cannot scrape postgres exporter for 1m"
+
       # db health as seen by app readiness probes
       - alert: ThumbnailerApiNotReady
         expr: thumbnailer_ready == 0
@@ -59,15 +69,35 @@ groups:
           summary: "api 5xx rate > 5% (2m)"
           description: "api is returning elevated 5xx responses"
 
+      - alert: ThumbnailerQueueBacklog
+        expr: queue_depth > 50
+        for: 10m
+        labels:
+          severity: page
+          service: thumbnailer-worker
+        annotations:
+          summary: "queue backlog"
+          description: "queued jobs > 50 for 10m"
+
+      - alert: ThumbnailerJobsStuck
+        expr: jobs_stuck > 0
+        for: 2m
+        labels:
+          severity: page
+          service: thumbnailer-worker
+        annotations:
+          summary: "jobs stuck"
+          description: "processing jobs older than 2m"
+
       # latency slo: 99% under 300ms
       # we alert on a "fast burn" using error budget style:
       # good = under 0.3s, bad = >= 0.3s
       - alert: ThumbnailerLatencySLOFastBurn
         expr: |
           (
-            sum(rate(http_request_duration_seconds_bucket{service="api",route="POST /v1/thumbnails",le="0.3"}[5m]))
+            sum(rate(http_request_duration_seconds_bucket{service="api",method="POST",route="/v1/thumbnails",le="0.3"}[5m]))
             /
-            sum(rate(http_request_duration_seconds_count{service="api",route="POST /v1/thumbnails"}[5m]))
+            sum(rate(http_request_duration_seconds_count{service="api",method="POST",route="/v1/thumbnails"}[5m]))
           ) < 0.99
         for: 5m
         labels:
@@ -76,3 +106,14 @@ groups:
         annotations:
           summary: "latency slo burn (fast)"
           description: "less than 99% of POST /v1/thumbnails requests are under 300ms over 5m"
+
+      - alert: ThumbnailerJobLatencySLOFastBurn
+        expr: |
+          histogram_quantile(0.95, sum(rate(job_latency_seconds_bucket[5m])) by (le)) > 5
+        for: 5m
+        labels:
+          severity: page
+          service: thumbnailer-worker
+        annotations:
+          summary: "job latency slo burn (fast)"
+          description: "p95 end-to-end job latency exceeds 5s over 5m"

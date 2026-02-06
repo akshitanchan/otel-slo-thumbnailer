@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import Fastify from "fastify";
@@ -11,6 +12,7 @@ import { createDb, type Db } from "./db.js";
 import { registry, httpRequestDurationSeconds, httpRequestsTotal } from "./metrics.js";
 import { log } from "./log.js";
 import { saveUploadWithHash } from "./file.js";
+import { parseSizes } from "./validation.js";
 
 type CreateJobResponse = {
   job_id: string;
@@ -45,30 +47,6 @@ type OutputRow = {
   format: string;
   created_at: string;
 };
-
-function parseSizes(raw: unknown, allowed: number[]): number[] {
-  if (raw === undefined || raw === null || raw === "") return [256];
-
-  const str = String(raw);
-  const parts = str.split(",").map((p) => p.trim()).filter(Boolean);
-  if (parts.length === 0) return [256];
-
-  const sizes = parts.map((p) => Number(p));
-  if (sizes.some((n) => !Number.isInteger(n))) throw new Error("invalid sizes");
-  if (sizes.some((n) => !allowed.includes(n))) throw new Error("invalid sizes");
-
-  // remove dupes, keep order
-  const seen = new Set<number>();
-  const unique: number[] = [];
-  for (const s of sizes) {
-    if (!seen.has(s)) {
-      seen.add(s);
-      unique.push(s);
-    }
-  }
-
-  return unique.length ? unique : [256];
-}
 
 function activeTraceIds(): { trace_id?: string; span_id?: string } {
   const span = trace.getSpan(context.active());
@@ -122,12 +100,12 @@ export async function buildServer(
   });
 
   app.get("/healthz", async () => ({ ok: true }));
-  
+
   app.get("/readyz", async (_req, reply) => {
-  const ready = opts.getReady();
-  if (!ready) return reply.code(503).send({ ok: false });
-  return reply.send({ ok: true });
-});
+    const ready = opts.getReady();
+    if (!ready) return reply.code(503).send({ ok: false });
+    return reply.send({ ok: true });
+  });
 
   app.get("/metrics", async (_req, reply) => {
     reply.type(registry.contentType);
@@ -135,6 +113,11 @@ export async function buildServer(
   });
 
   app.post("/v1/thumbnails", async (req, reply) => {
+    if (!opts.getReady()) {
+      reply.code(503);
+      return { error: "dependency unavailable" };
+    }
+
     const tenantId = (req.headers["x-tenant-id"] ? String(req.headers["x-tenant-id"]) : "demo").trim();
     const idempotencyKey = req.headers["idempotency-key"] ? String(req.headers["idempotency-key"]).trim() : null;
 
@@ -236,6 +219,11 @@ export async function buildServer(
   });
 
   app.get("/v1/jobs/:id", async (req, reply) => {
+    if (!opts.getReady()) {
+      reply.code(503);
+      return { error: "dependency unavailable" };
+    }
+
     const id = (req.params as any).id as string;
 
     const jobRes = await db.query<JobRow>(
@@ -313,7 +301,7 @@ export async function buildServer(
     }
 
     reply.type("image/jpeg");
-    return reply.sendFile ? reply.sendFile(abs) : await fs.readFile(abs);
+    return reply.sendFile ? reply.sendFile(abs) : reply.send(createReadStream(abs));
   });
 
   return { app, db, config };

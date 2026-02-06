@@ -30,6 +30,18 @@ export const jobLatencySeconds = new client.Histogram({
   buckets: [0.1, 0.25, 0.5, 1, 2, 3, 5, 8, 13, 21, 34]
 });
 
+export const queueDepth = new client.Gauge({
+  name: "queue_depth",
+  help: "number of queued jobs ready to run",
+  registers: [registry]
+});
+
+export const jobsStuck = new client.Gauge({
+  name: "jobs_stuck",
+  help: "number of processing jobs older than the stuck threshold",
+  registers: [registry]
+});
+
 export const dbQueryDurationSeconds = new client.Histogram({
   name: "db_query_duration_seconds",
   help: "db query duration in seconds",

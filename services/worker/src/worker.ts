@@ -7,8 +7,10 @@ import { context, propagation, trace } from "@opentelemetry/api";
 
 import type { Db } from "./db.js";
 import type { Config } from "./config.js";
-import { jobsClaimedTotal, jobsCompletedTotal, jobLatencySeconds } from "./metrics.js";
+import { jobsClaimedTotal, jobsCompletedTotal, jobLatencySeconds, queueDepth, jobsStuck } from "./metrics.js";
 import { log } from "./log.js";
+import { parseSizes } from "./validation.js";
+import { backoffMs } from "./backoff.js";
 
 type JobRow = {
   id: string;
@@ -22,32 +24,6 @@ type JobRow = {
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-function backoffMs(attempt: number): number {
-  // attempt starts at 1 for first failure
-  const base = 250;
-  const cap = 15_000;
-  const exp = Math.min(cap, base * Math.pow(2, Math.max(0, attempt - 1)));
-  const jitter = Math.floor(Math.random() * 250);
-  return exp + jitter;
-}
-
-function parseSizes(value: unknown, allowed: number[]): number[] {
-  if (!Array.isArray(value)) throw new Error("invalid sizes");
-  const sizes = value.map((x) => Number(x));
-  if (sizes.some((n) => !Number.isInteger(n))) throw new Error("invalid sizes");
-  if (sizes.some((n) => !allowed.includes(n))) throw new Error("invalid sizes");
-  // unique, keep order
-  const seen = new Set<number>();
-  const out: number[] = [];
-  for (const s of sizes) {
-    if (!seen.has(s)) {
-      seen.add(s);
-      out.push(s);
-    }
-  }
-  return out.length ? out : [256];
 }
 
 async function ensureDirs(storageDir: string, jobId: string) {
@@ -136,7 +112,7 @@ async function scheduleRetry(db: Db, jobId: string, attempt: number, errorCode: 
     `
     UPDATE jobs
     SET status = 'queued',
-        run_at = now() + ($2 || ' milliseconds')::interval,
+      run_at = now() + ($2 * interval '1 millisecond'),
         error_code = $3,
         error_message = $4
     WHERE id = $1
@@ -194,10 +170,40 @@ async function processJob(db: Db, config: Config, job: JobRow) {
   log("info", "job_succeeded", { job_id: job.id, sizes });
 }
 
+async function updateQueueDepth(db: Db) {
+  const [queued, stuck] = await Promise.all([
+    db.query<{ count: number }>(
+      "queue_depth",
+      "SELECT COUNT(*)::int AS count FROM jobs WHERE status = 'queued' AND run_at <= now()"
+    ),
+    db.query<{ count: number }>(
+      "jobs_stuck",
+      "SELECT COUNT(*)::int AS count FROM jobs WHERE status = 'processing' AND started_at < now() - interval '2 minutes'"
+    )
+  ]);
+
+  const queuedCount = queued.rows[0]?.count ?? 0;
+  const stuckCount = stuck.rows[0]?.count ?? 0;
+  queueDepth.set(queuedCount);
+  jobsStuck.set(stuckCount);
+}
+
 export async function runWorker(db: Db, config: Config, stopSignal: { stopped: boolean }) {
   const tracer = trace.getTracer("thumbnailer-worker");
+  let nextQueueDepthAt = 0;
 
   while (!stopSignal.stopped) {
+    const now = Date.now();
+    if (now >= nextQueueDepthAt) {
+      try {
+        await updateQueueDepth(db);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log("error", "queue_depth_failed", { error: msg });
+      }
+      nextQueueDepthAt = now + 2000;
+    }
+
     let job: JobRow | null = null;
 
     try {
@@ -226,7 +232,7 @@ export async function runWorker(db: Db, config: Config, stopSignal: { stopped: b
         { attributes: { "job.id": job!.id, "job.attempts": job!.attempts } },
         async (span) => {
           try {
-            log("info", "job_started", { job_id: job!.id, attempt: job!.attempts });
+            log("info", "job_claimed", { job_id: job!.id, attempt: job!.attempts });
             await processJob(db, config, job!);
             span.setStatus({ code: 1 });
           } catch (err) {
