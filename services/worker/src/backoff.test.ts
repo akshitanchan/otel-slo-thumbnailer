@@ -31,4 +31,10 @@ describe("backoffMs", () => {
     const high = backoffMs(1, () => 0.999);
     expect(high - low).toBe(249); // floor(0.999 * 250) = 249
   });
+
+  it("jitter is always non-negative", () => {
+    for (let i = 0; i < 20; i++) {
+      expect(backoffMs(i, Math.random)).toBeGreaterThanOrEqual(0);
+    }
+  });
 });

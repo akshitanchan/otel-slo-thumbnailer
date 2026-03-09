@@ -15,4 +15,12 @@ describe("parseSizes", () => {
     expect(() => parseSizes("abc", [64, 256])).toThrow("invalid sizes");
     expect(() => parseSizes("128", [64, 256])).toThrow("invalid sizes");
   });
+
+  it("handles a single valid size", () => {
+    expect(parseSizes("64", [64, 256])).toEqual([64]);
+  });
+
+  it("treats null the same as undefined", () => {
+    expect(parseSizes(null, [64, 256])).toEqual([256]);
+  });
 });
