@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# Runs a full incident simulation: baseline traffic, DB outage, recovery.
+# Useful for showing the Grafana dashboard during a live demo — the run
+# is saved to demo_runs/run.json so you can replay it later with the
+# same timing.
+#
 set -euo pipefail
 
 API_URL="${API_URL:-http://localhost:8080}"
@@ -13,7 +19,7 @@ mkdir -p "$(dirname "$RECORD")"
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
 
 # ------------------------------------------------------------------
-# Phase 1 — baseline load (ramp up for ~30s before incident)
+# Baseline — send traffic for ~30s before we break anything
 # ------------------------------------------------------------------
 log "starting loadgen: count=$COUNT concurrency=$CONCURRENCY sizes=$SIZES"
 node ./node_modules/.bin/tsx scripts/loadgen.ts \
@@ -29,13 +35,13 @@ sleep 30
 log "baseline phase complete – injecting db-down incident for ${DB_DOWN_SECS}s"
 
 # ------------------------------------------------------------------
-# Phase 2 — DB outage (loadgen keeps running → 5xx / timeouts pile up)
+# Outage — pause postgres so connections hang then timeout
 # ------------------------------------------------------------------
 docker compose pause postgres
 sleep "$DB_DOWN_SECS"
 
 # ------------------------------------------------------------------
-# Phase 3 — recovery (unpause, loadgen still running → backlog drains)
+# Recovery — unpause and let the worker drain the backlog
 # ------------------------------------------------------------------
 log "restoring postgres"
 docker compose unpause postgres

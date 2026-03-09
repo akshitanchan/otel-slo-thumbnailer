@@ -137,7 +137,9 @@ export async function buildServer(
 
     const jobId = crypto.randomUUID();
 
-    // capture traceparent for worker continuation
+    // Stash the current trace context in the job row so the worker can pick it
+    // up later and continue the same trace. Without this, worker spans would be
+    // disconnected roots in Jaeger.
     const carrier: Record<string, string> = {};
     propagation.inject(context.active(), carrier);
     const traceparent = carrier["traceparent"] ?? null;

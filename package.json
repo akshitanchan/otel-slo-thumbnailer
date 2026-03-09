@@ -1,5 +1,6 @@
 {
   "name": "otel-slo-thumbnailer",
+  "description": "Image thumbnail service with OpenTelemetry, Prometheus, and Grafana",
   "private": true,
   "workspaces": [
     "packages/*",

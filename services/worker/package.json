@@ -1,5 +1,6 @@
 {
   "name": "@thumbnailer/worker",
+  "description": "Background worker that generates thumbnails using sharp",
   "private": true,
   "type": "module",
   "scripts": {

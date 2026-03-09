@@ -36,6 +36,8 @@ async function claimOne(db: Db): Promise<JobRow | null> {
   try {
     await client.query("BEGIN");
 
+    // SKIP LOCKED lets multiple workers run without blocking each other —
+    // if another worker already grabbed a row, we just move on instead of waiting.
     const sel = await client.query<JobRow>(`
       SELECT id, input_path, sizes, attempts, max_attempts, created_at, traceparent
       FROM jobs
@@ -145,7 +147,7 @@ async function processJob(db: Db, config: Config, job: JobRow) {
   const outDirRel = path.posix.join("outputs", job.id);
   const outDirAbs = path.join(config.storageDir, outDirRel);
 
-  // decode once by letting sharp handle pipeline; we do per-size encode outputs
+  // TODO: support webp output format
   for (const size of sizes) {
     const outRel = path.posix.join(outDirRel, `${size}.jpg`);
     const outAbs = path.join(outDirAbs, `${size}.jpg`);

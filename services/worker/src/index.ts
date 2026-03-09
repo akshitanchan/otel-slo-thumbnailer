@@ -36,10 +36,12 @@ const shutdown = async () => {
   readiness.stop();
   try {
     await app.close();
-  } catch { /* shutdown best-effort */ }
+  } catch {
+    // closing a server that never started is fine
+  }
   try {
     await db.close();
-  } catch { /* shutdown best-effort */ }
+  } catch { /* pool already ended */ }
   await shutdownOtel().catch(() => {});
 };
 

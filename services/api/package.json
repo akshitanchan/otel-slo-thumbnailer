@@ -1,5 +1,6 @@
 {
   "name": "@thumbnailer/api",
+  "description": "HTTP API for uploading images and enqueuing thumbnail jobs",
   "private": true,
   "type": "module",
   "scripts": {

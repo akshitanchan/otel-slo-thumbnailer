@@ -22,10 +22,10 @@ const close = async () => {
   readiness.stop();
   try {
     await app.close();
-  } catch { /* shutdown best-effort */ }
+  } catch { /* already shutting down, doesn't matter */ }
   try {
     await db.close();
-  } catch { /* shutdown best-effort */ }
+  } catch { /* pool already ended */ }
   await shutdownOtel().catch(() => {});
 };
 

@@ -29,6 +29,7 @@ type RunRecord = {
   results: RunResult[];
 };
 
+// 1x1 transparent PNG — smallest valid image for testing
 const DEFAULT_IMAGE_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+5l9cAAAAASUVORK5CYII=";
 

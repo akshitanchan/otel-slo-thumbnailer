@@ -19,7 +19,7 @@ export function loadConfig(): Config {
     port: Number(process.env.PORT ?? "8080"),
     databaseUrl: requiredEnv("DATABASE_URL"),
     storageDir: process.env.STORAGE_DIR ?? "/data",
-    maxUploadBytes: 5 * 1024 * 1024,
+    maxUploadBytes: 5 * 1024 * 1024, // TODO: make this configurable via env
     allowedSizes: [64, 128, 256, 512]
   };
 }

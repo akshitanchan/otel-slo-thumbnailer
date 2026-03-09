@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it } from "vitest";
 
 // TODO: test processJob and claimOne with a mock db
 // Need to figure out how to mock the pg Pool for unit tests — for now
