@@ -1,5 +1,4 @@
 import { Pool } from "pg";
-import { dbQueryDurationSeconds } from "./metrics.js";
 
 export type Db = {
   pool: Pool;
@@ -7,7 +6,10 @@ export type Db = {
   query<T>(operation: string, text: string, params?: unknown[]): Promise<{ rows: T[] }>;
 };
 
-export function createDb(databaseUrl: string): Db {
+type TimerFn = (operation: string) => () => void;
+
+// TODO: add connection retry on startup
+export function createDb(databaseUrl: string, startTimer?: TimerFn): Db {
   const connectTimeoutMs = Number(process.env.DB_CONNECT_TIMEOUT_MS ?? "2000");
   const statementTimeoutMs = Number(process.env.DB_STATEMENT_TIMEOUT_MS ?? "2000");
   const pool = new Pool({
@@ -34,12 +36,12 @@ export function createDb(databaseUrl: string): Db {
       await pool.end();
     },
     async query<T>(operation: string, text: string, params: unknown[] = []) {
-      const end = dbQueryDurationSeconds.labels(operation).startTimer();
+      const end = startTimer?.(operation);
       try {
         const res = await pool.query(text, params);
         return { rows: res.rows as T[] };
       } finally {
-        end();
+        end?.();
       }
     }
   };

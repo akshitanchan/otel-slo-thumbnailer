@@ -4,6 +4,7 @@ WORKDIR /app
 
 # copy workspace manifests first for better caching
 COPY package.json package-lock.json tsconfig.base.json eslint.config.mjs ./
+COPY packages/common/package.json packages/common/package.json
 COPY services/migrate/package.json services/migrate/package.json
 
 RUN npm ci

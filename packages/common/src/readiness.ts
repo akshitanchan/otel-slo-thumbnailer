@@ -1,29 +1,22 @@
-import { readyGauge } from "./metrics.js";
-
 export function startReadinessLoop(
   check: () => Promise<void>,
-  intervalMs = 2000
+  intervalMs = 2000,
+  onChange?: (ready: boolean) => void
 ): { getReady: () => boolean; stop: () => void } {
   let ready = false;
-
-  function set(v: boolean) {
-    ready = v;
-    readyGauge.set(v ? 1 : 0);
-  }
-
   let stopped = false;
 
   async function tick() {
     if (stopped) return;
     try {
       await check();
-      set(true);
+      ready = true;
     } catch {
-      set(false);
+      ready = false;
     }
+    onChange?.(ready);
   }
 
-  // run once immediately
   void tick();
 
   const t = setInterval(() => void tick(), intervalMs);

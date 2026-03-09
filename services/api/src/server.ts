@@ -8,9 +8,8 @@ import type { FastifyInstance } from "fastify";
 import { context, propagation, trace } from "@opentelemetry/api";
 
 import { loadConfig, type Config } from "./config.js";
-import { createDb, type Db } from "./db.js";
-import { registry, httpRequestDurationSeconds, httpRequestsTotal } from "./metrics.js";
-import { log } from "./log.js";
+import { createDb, type Db, log } from "@thumbnailer/common";
+import { registry, httpRequestDurationSeconds, httpRequestsTotal, dbQueryDurationSeconds } from "./metrics.js";
 import { saveUploadWithHash } from "./file.js";
 import { parseSizes } from "./validation.js";
 
@@ -67,7 +66,7 @@ export async function buildServer(
   }
 ): Promise<{ app: FastifyInstance; db: Db; config: Config }> {
   const config = loadConfig();
-  const db = createDb(config.databaseUrl);
+  const db = createDb(config.databaseUrl, (op) => dbQueryDurationSeconds.labels(op).startTimer());
 
   await fs.mkdir(path.join(config.storageDir, "inputs"), { recursive: true });
   await fs.mkdir(path.join(config.storageDir, "outputs"), { recursive: true });

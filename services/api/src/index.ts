@@ -1,6 +1,6 @@
 import process from "node:process";
-import { startOtel, shutdownOtel } from "./otel.js";
-import { startReadinessLoop } from "./readiness.js";
+import { startOtel, shutdownOtel, startReadinessLoop } from "@thumbnailer/common";
+import { readyGauge } from "./metrics.js";
 
 await startOtel();
 
@@ -14,7 +14,8 @@ const readiness = startReadinessLoop(
   async () => {
     await db.query("readiness_check", "SELECT 1");
   },
-  2000
+  2000,
+  (v) => readyGauge.set(v ? 1 : 0)
 );
 
 const close = async () => {

@@ -5,10 +5,10 @@ import path from "node:path";
 import sharp from "sharp";
 import { context, propagation, trace } from "@opentelemetry/api";
 
-import type { Db } from "./db.js";
+import type { Db } from "@thumbnailer/common";
 import type { Config } from "./config.js";
 import { jobsClaimedTotal, jobsCompletedTotal, jobLatencySeconds, queueDepth, jobsStuck } from "./metrics.js";
-import { log } from "./log.js";
+import { log } from "@thumbnailer/common";
 import { parseSizes } from "./validation.js";
 import { backoffMs } from "./backoff.js";
 

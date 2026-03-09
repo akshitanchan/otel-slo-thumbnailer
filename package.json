@@ -2,6 +2,7 @@
   "name": "otel-slo-thumbnailer",
   "private": true,
   "workspaces": [
+    "packages/*",
     "services/*"
   ],
   "scripts": {

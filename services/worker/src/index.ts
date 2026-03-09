@@ -2,23 +2,32 @@ import process from "node:process";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { startOtel, shutdownOtel } from "./otel.js";
+import { startOtel, shutdownOtel, createDb, startReadinessLoop, log } from "@thumbnailer/common";
 import { loadConfig } from "./config.js";
-import { createDb } from "./db.js";
 import { startHttpServer } from "./http.js";
 import { runWorker } from "./worker.js";
-import { startReadinessLoop } from "./readiness.js";
-import { log } from "./log.js";
+import { readyGauge, dbQueryDurationSeconds } from "./metrics.js";
 
 await startOtel();
 
 const config = loadConfig();
-const db = createDb(config.databaseUrl);
+const db = createDb(config.databaseUrl, (op) => dbQueryDurationSeconds.labels(op).startTimer());
 
 await fs.mkdir(path.join(config.storageDir, "outputs"), { recursive: true });
 
 const stopSignal = { stopped: false };
-const readiness = startReadinessLoop(db, 2000);
+let wasReady = false;
+const readiness = startReadinessLoop(
+  async () => { await db.query("readiness_check", "SELECT 1"); },
+  2000,
+  (v) => {
+    readyGauge.set(v ? 1 : 0);
+    if (v !== wasReady) {
+      log(v ? "info" : "error", "ready_state_changed", { ready: v });
+      wasReady = v;
+    }
+  }
+);
 
 const app = await startHttpServer({ port: config.port, getReady: readiness.getReady });
 
